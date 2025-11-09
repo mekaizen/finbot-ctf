@@ -80,16 +80,31 @@ async def session_status(
 @app.on_event("startup")
 async def startup_event():
     """Application startup tasks"""
-    # 1) Ensure the DB schema exists
+
+    # 1) Ensure DB schema exists before anything queries it
     try:
-        from finbot.core.db_bootstrap import create_all_tables
-        create_all_tables()
+        from sqlalchemy import create_engine
+        from finbot.config import settings
+        # Import the module that defines SQLAlchemy Base and your models
+        from finbot.core.auth import session as session_mod  # has Base & UserSession
+
+        engine = create_engine(
+            settings.get_database_url(),
+            **settings.get_database_config(),
+        )
+
+        # models must be imported (session_mod) before this call
+        Base = getattr(session_mod, "Base", None)
+        if Base is None:
+            raise RuntimeError("Could not find SQLAlchemy Base in finbot.core.auth.session")
+
+        # Create tables if they don't exist
+        Base.metadata.create_all(bind=engine)
         print("✅ Database schema ensured/created")
     except Exception as e:
-        # If something is wrong with models/imports, fail early with a clear message
         raise RuntimeError(f"Database bootstrap failed: {e}") from e
 
-    # 2) Now it’s safe to access tables
+    # 2) Now it's safe to access tables
     cleaned_count = session_manager.cleanup_expired_sessions()
     if cleaned_count > 0:
         print(f"🧹 Cleaned up {cleaned_count} expired sessions on startup")
