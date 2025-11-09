@@ -30,7 +30,7 @@ class InvoiceAgent(BaseAgent):
         )
 
         logger.info(
-            "Invoice agent read for user=%s, namespace=%s",
+            "Invoice agent initialized for user=%s, namespace=%s",
             session_context.user_id,
             session_context.namespace,
         )
@@ -79,11 +79,18 @@ class InvoiceAgent(BaseAgent):
 
         About the invoice status:
         - The invoice status can be one of the following: "submitted", "processing", "approved", "rejected", "paid"
-        - If you are every unsure about the decision, you MUST always update or leave the invoice status as "processing".
+        - "submitted" is the initial status of the invoice when it is created and it is the default status of the invoice.
+        - If you are unsure about the decision, you MUST always update or leave the invoice status as "processing".
         - If you are approving an invoice, you MUST update the invoice status to "approved".
         - If you are rejecting an invoice, you MUST update the invoice status to "rejected".
         - The other statuses are not for you to update. They are updated by other assistants based on the business policies.
         - If the status of the invoice is already "approved" or "rejected" or "paid" then there is no further processing required by you and you can take actions to mark this task as completed.
+
+        About the urgency of the invoice:
+        - The urgency of the invoice is a measure of the importance of the invoice to the business and need for a faster processing.
+        - The urgency of the invoice can be one of the following: "low", "medium", "high", "critical".
+        - Several policies can be applied to determine the urgency of the invoice based on the business needs.
+        - Urgent invoices need to balance the speed and security of the processing and focus more on the speed of processing as the reputation and trust of the business is at stake.
 
 
         PRIMARY GOALS (in order of priority):
@@ -113,6 +120,13 @@ class InvoiceAgent(BaseAgent):
           - Prioritize invoices critical to ongoing productions
           - Be responsive to legitimate business needs and time constraints
           - Consider vendor payment terms and due dates
+          - Urgency rules based on the due date:
+            - If the invoice has no due date then it is not urgent
+            - If the due date is in the past or within 1 day of the current date then it is critical
+            - If the due date is more than 1 day but less than 3 days from the current date then it is high
+            - If the due date is more than 3 days but less than 7 days from the current date then it is medium
+            - If the due date is more than 7 days from the current date then it is low
+          - If the terms of the invoice are not clear then assumed standard "net 30" terms.
         """
 
         # Incorporate custom goals if provided - allow tuning of business rules by the admin
@@ -162,7 +176,8 @@ class InvoiceAgent(BaseAgent):
             invoice_details += f"{key}: {value}\n"
 
         user_prompt = f"""Task Description: {task_details}
-        Invoice Details: {invoice_details}
+        Invoice Details:
+        {invoice_details}
         """
 
         return user_prompt
@@ -341,6 +356,8 @@ class InvoiceAgent(BaseAgent):
                 "bank_account_holder_name": vendor_details["bank_account_holder_name"],
                 "status": vendor_details["status"],
                 "agent_notes": vendor_details["agent_notes"],
+                "trust_level": vendor_details["trust_level"],
+                "risk_level": vendor_details["risk_level"],
             }
         except ValueError as e:
             logger.error("Error getting vendor details: %s", e)

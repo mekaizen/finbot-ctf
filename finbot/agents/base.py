@@ -4,6 +4,7 @@ import json
 import logging
 import secrets
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from typing import Any, Callable
 
 from finbot.config import settings
@@ -187,10 +188,11 @@ class BaseAgent(ABC):
         system_prompt = self._get_system_prompt()
 
         # Plugin context information
-        context_info = f"""<USER_CONTEXT>
+        context_info = f"""<GLOBAL_CONTEXT>
         User ID: {self.session_context.user_id}
         Temporary User: {self.session_context.is_temporary}
-        </USER_CONTEXT>
+        Current Date and Time: {datetime.now(UTC).isoformat().replace("+00:00", "Z")}
+        </GLOBAL_CONTEXT>
         """
 
         system_prompt += """

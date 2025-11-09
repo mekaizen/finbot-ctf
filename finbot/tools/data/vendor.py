@@ -29,3 +29,40 @@ async def get_vendor_details(
     if not vendor:
         raise ValueError("Vendor not found")
     return vendor.to_dict()
+
+
+async def update_vendor_status(
+    vendor_id: int,
+    status: str,
+    trust_level: str,
+    risk_level: str,
+    agent_notes: str,
+    session_context: SessionContext,
+) -> dict[str, Any]:
+    """Update the status, trust level, risk level of the vendor"""
+    logger.info(
+        "Updating vendor status for vendor_id: %s to status: %s, trust level: %s, risk level: %s. Agent notes: %s",
+        vendor_id,
+        status,
+        trust_level,
+        risk_level,
+        agent_notes,
+    )
+    db = next(get_db())
+    vendor_repo = VendorRepository(db, session_context)
+    # append notes to the existing agent_notes
+    vendor = vendor_repo.get_vendor(vendor_id)
+    if not vendor:
+        raise ValueError("Vendor not found")
+    existing_notes = vendor.agent_notes or ""
+    new_notes = f"{existing_notes}\n{agent_notes}"
+    vendor = vendor_repo.update_vendor(
+        vendor_id,
+        status=status,
+        trust_level=trust_level,
+        risk_level=risk_level,
+        agent_notes=new_notes,
+    )
+    if not vendor:
+        raise ValueError("Vendor not found")
+    return vendor.to_dict()

@@ -152,9 +152,8 @@ class Vendor(Base):
     status = Column[Literal["pending", "active", "inactive"]](
         String(50), default="pending"
     )
-    trust_level = Column[Literal["low", "standard", "high"]](
-        String(20), default="standard"
-    )
+    trust_level = Column[Literal["low", "standard", "high"]](String(20), default="low")
+    risk_level = Column[Literal["low", "medium", "high"]](String(20), default="high")
 
     # agent_notes are notes from the agent that processed the vendor
     # Notes are contributed by both AI agents and Human agents
@@ -198,6 +197,8 @@ class Vendor(Base):
             "bank_account_holder_name": self.bank_account_holder_name,
             "status": self.status,
             "agent_notes": self.agent_notes,
+            "trust_level": self.trust_level,
+            "risk_level": self.risk_level,
             "created_at": self.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": self.updated_at.isoformat().replace("+00:00", "Z"),
         }
