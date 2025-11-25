@@ -14,8 +14,6 @@ from finbot.core.auth.middleware import SessionMiddleware, get_session_context
 from finbot.core.auth.session import SessionContext, session_manager
 from finbot.core.error_handlers import register_error_handlers
 from finbot.logging_config import setup_logging
-from finbot.core.data.models import Base
-Base.metadata.create_all(bind=engine)
 
 setup_logging()
 
