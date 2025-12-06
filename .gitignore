@@ -67,4 +67,5 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-.hypothesis/
+.hypothesis/google-credentials.json
+SECURITY_BUGS_REPORT.md
