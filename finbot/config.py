@@ -101,6 +101,9 @@ class Settings(BaseSettings):
     # OpenAI Config
     OPENAI_API_KEY: str = ""
 
+    # Ollama
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+
     # Development Config
     RELOAD: bool = True
     LOG_LEVEL: str = "debug"
