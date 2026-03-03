@@ -62,6 +62,30 @@ def main():
     if has_docker:
         checks.append(check_docker_running())
 
+    # Check for Redis (local or docker)
+    has_redis = shutil.which("redis-cli") or shutil.which("redis-server")
+    if not has_redis and has_docker:
+        # Check if redis container is running
+        try:
+            result = subprocess.run(
+                ["docker", "ps", "--filter", "name=redis", "--format", "{{.Names}}"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            if "redis" in result.stdout.lower():
+                has_redis = True
+    
+        except Exception:
+            has_redis = False
+    
+    if has_redis:
+        print("✅ Redis is available")
+    else:
+        print("❌ Redis is not installed or running")
+        print("   Run: docker compose up -d redis")
+        checks.append(False)
+
     print("\n" + "=" * 50)
     if all(checks):
         print("✅ All prerequisites are met!")

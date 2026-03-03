@@ -8,7 +8,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-
+import hashlib
 from finbot.core.auth.session import SessionContext
 from finbot.core.data.models import LLMRequest, LLMResponse
 from finbot.core.llm.client import LLMClient, get_llm_client
@@ -112,44 +112,47 @@ class ContextualLLMClient:
         interaction_id = str(uuid.uuid4())
         self.call_count += 1
 
-        if not request.provider:
-            request.provider = self.llm_client.provider
-        if not request.model:
-            request.model = self.llm_client.default_model
-        if not request.temperature:
-            request.temperature = self.llm_client.default_temperature
-
+        resolved_model = request.model or self.llm_client.default_model
+        resolved_provider = request.provider or self.llm_client.provider
+        resolved_temperature = (
+            self.llm_client.default_temperature 
+            if request.temperature is None 
+            else request.temperature
+        )
         user_message_info = self._extract_user_message_info(request.messages)
+        
+        raw_input = user_message_info["user_message"] or ""
 
         event_data = {
             "interaction_id": interaction_id,
-            "model": request.model or self.llm_client.default_model,
-            "temperature": request.temperature or self.llm_client.default_temperature,
+            "model": resolved_model,
+            "provider": resolved_provider,
+            "temperature": resolved_temperature,
             "message_count": len(request.messages or []),
             "agent_name": self.agent_name,
-            "call_count": self.call_count,
-            "request_dump": request.model_dump_json(),
+            "call_count": self.call_count,            
             "metadata": event_metadata or {},
             # User input tracking for CTF detection
-            "user_message": user_message_info["user_message"],
+            "user_message": hashlib.sha256(raw_input.encode()).hexdigest() if raw_input else None,
             "user_message_length": user_message_info["user_message_length"],
             "message_roles": user_message_info["message_roles"],
         }
 
         # Emit start event
         await event_bus.emit_agent_event(
-            agent_name=self.agent_name,
-            event_type="llm_request_start",
-            event_subtype="llm",
-            event_data=event_data,
-            session_context=self.session_context,
-            workflow_id=self.workflow_id,
-            summary=f"LLM request started (model: {request.model}, messages: {len(request.messages or [])})",
-        )
+                    agent_name=self.agent_name,
+                    event_type="llm_request_start",
+                    event_subtype="llm",
+                    event_data=event_data,
+                    session_context=self.session_context,
+                    workflow_id=self.workflow_id,
+                    summary=f"LLM request started (model: {request.model}, messages: {len(request.messages or [])})",
+                )
 
         start_time = datetime.now(UTC)
 
         try:
+            # Pass original request unchanged — underlying client resolves its own defaults
             response = await self.llm_client.chat(request=request)
 
             duration_ms = int((datetime.now(UTC) - start_time).total_seconds() * 1000)
@@ -163,11 +166,9 @@ class ContextualLLMClient:
                     **event_data,
                     "duration_ms": duration_ms,
                     "response_length": len(response.content or ""),
-                    "response_content": response.content,
                     "has_tool_calls": bool(response.tool_calls),
                     "tool_call_count": len(response.tool_calls or []),
                     "success": True,
-                    "response_dump": response.model_dump_json(),
                 },
                 session_context=self.session_context,
                 workflow_id=self.workflow_id,

@@ -28,8 +28,8 @@ uv run python scripts/setup_database.py
 # Or specify database type explicitly
 uv run python scripts/setup_database.py --db-type sqlite
 
-# For PostgreSQL: start the database server first
-docker compose up -d postgres
+# For PostgreSQL and Redis: start the services first
+docker compose up -d postgres redis
 uv run python scripts/setup_database.py --db-type postgresql
 
 # Start the platform
