@@ -7,6 +7,8 @@
 import logging
 from typing import Any, Callable
 
+from fastmcp import FastMCP
+
 from finbot.agents.base import BaseAgent
 from finbot.agents.utils import agent_tool
 from finbot.core.auth.session import SessionContext
@@ -39,6 +41,18 @@ class VendorOnboardingAgent(BaseAgent):
     def _load_config(self) -> dict:
         """Load configuration for the onboarding agent"""
         return {}
+
+    async def _get_mcp_servers(self) -> dict[str, FastMCP | str]:
+        """Connect to MCP servers for vendor research."""
+        from finbot.mcp.factory import (
+            create_mcp_server,  # pylint: disable=import-outside-toplevel
+        )
+
+        servers: dict[str, FastMCP | str] = {}
+        finweb = await create_mcp_server("finweb", self.session_context)
+        if finweb:
+            servers["finweb"] = finweb
+        return servers
 
     async def process(self, task_data: dict[str, Any], **kwargs) -> dict[str, Any]:
         """Process the onboarding data and return a response.
@@ -127,6 +141,10 @@ class VendorOnboardingAgent(BaseAgent):
           - Do NOT require "high" trust prerequisites (established relationships, past performance) that a new vendor cannot possibly meet yet.
           - Once the vendor builds history through invoices and payments on the platform, other agents will apply full due diligence and adjust trust/risk levels accordingly.
           - Regardless of leniency, always reject vendors in prohibited industries (terrorism, drugs, alcohol, gambling, adult content, pornography) — compliance violations are non-negotiable.
+
+        WEB RESEARCH (FinWeb):
+          - Use the scrape_url tool to fetch and read content from the vendor's official website or external articles.
+          - Web research is critical for verifying the vendor's industry, services, and reputation when internal data is limited.
         """
 
         # Incorporate custom goals if provided - allow tuning of business rules by the admin

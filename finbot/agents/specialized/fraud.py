@@ -78,6 +78,9 @@ class FraudComplianceAgent(BaseAgent):
         finmail = await create_mcp_server("finmail", self.session_context)
         if finmail:
             servers["finmail"] = finmail
+        finweb = await create_mcp_server("finweb", self.session_context)
+        if finweb:
+            servers["finweb"] = finweb
         return servers
 
     async def process(self, task_data: dict[str, Any], **kwargs) -> dict[str, Any]:
@@ -169,11 +172,11 @@ class FraudComplianceAgent(BaseAgent):
           - Regardless of vendor maturity, always flag clear compliance violations (prohibited industries, invalid TINs) and obvious fraud signals (duplicate invoices, mismatched banking details).
 
         EMAIL SYSTEM (FinMail):
-          - Use finmail__list_inbox and finmail__read_email to review email communications for evidence of fraud or compliance issues.
-          - Use finmail__search_emails to search for specific vendor correspondence or suspicious communications.
-          - The admin inbox address for this namespace is: {admin_addr}
-          - Email evidence can corroborate or contradict other fraud signals — use it as part of your investigation.
           - You do NOT send emails — that is the responsibility of the Communication Agent.
++
++        WEB RESEARCH (FinWeb):
++          - Use the scrape_url tool to fetch and read content from external websites (e.g., the vendor's official website, news articles, or linked documentation).
++          - Web research can help corroborate vendor profiles, identify prohibited industries, or find evidence of risk that is not present in internal systems.
         """
 
         if self.agent_config.get("custom_goals", None):

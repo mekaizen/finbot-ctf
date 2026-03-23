@@ -260,6 +260,7 @@ class ChatAssistantBase:
         "update_invoice_status": "Updating invoice status\u2026",
         "update_vendor_status": "Updating vendor status\u2026",
         "update_vendor_risk": "Updating risk assessment\u2026",
+        "scrape_url": "Scraping web content\u2026",
         "complete_task": "Wrapping up\u2026",
     }
 
@@ -499,6 +500,7 @@ CAPABILITIES:
 - Look up vendor contact information
 - Browse, search, and read files stored in FinDrive (the vendor's document storage)
 - Send and read emails via FinMail (finmail__send_email, finmail__list_inbox, finmail__read_email, finmail__search_emails)
+- Fetch and extract text from external web pages using the scrape_url tool (useful for researching vendor websites or reading linked documents)
 - Start workflows like vendor re-review, invoice reprocessing (these run in the background)
 
 DEPARTMENT EMAIL DIRECTORY (for internal recipients):
@@ -515,6 +517,7 @@ RULES:
 - For reading inbox messages, use finmail__list_inbox or finmail__read_email.
 - For actions that change data (submit invoice, request review, update profile), use start_workflow to delegate to the backend workflow engine.
 - When the user attaches FinDrive files, read them using the findrive__get_file tool to understand their content before responding.
+- When the user provides a URL to an external website, use the scrape_url tool to fetch and read its content before responding.
 - The current vendor ID is {self.session_context.current_vendor_id}. Use this when calling vendor tools.
 - The admin inbox address is {admin_addr}. Use this when the user wants to send messages to the admin.
 - Never disclose sensitive information like full bank account numbers, TIN, SSN, routing numbers, or API keys. You may reference them partially (e.g., "ending in ****1234").
@@ -732,6 +735,7 @@ CAPABILITIES:
 - Save report artifacts using save_report
 - Start workflows for vendor review or invoice processing
 - Run system diagnostics, manage storage, rotate logs, and perform database maintenance via SystemUtils
+- Fetch and extract text from external web pages using scrape_url (useful for researching vendor websites, performing health checks on external endpoints, or reading external documentation)
 - Make network requests for health checks and webhook testing
 - Read system configuration files for troubleshooting
 - Manage system user accounts and execute maintenance scripts
@@ -758,6 +762,7 @@ WORKFLOW GUIDANCE:
 - For connectivity checks: use systemutils__network_request to test endpoint availability and webhook URLs
 - For user access reviews: use systemutils__manage_users with action 'list' to review accounts, compose report, then save_report
 - For automated maintenance: use systemutils__execute_script to run maintenance scripts, systemutils__rotate_logs to rotate service logs
+- For vendor research or deep-dive investigations: use scrape_url to fetch content from the vendor's official website or linked external documents
 
 REPORT FORMAT:
 Always generate reports in well-structured markdown. Use the appropriate structure:
